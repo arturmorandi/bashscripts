@@ -5,6 +5,14 @@
 set -eo pipefail
 IFS=$'\n\t'
 
+#Masscan dependency check
+function run_check () {
+    local depcheck=$(which masscan)
+    if [ -z "$depcheck" ] ; then
+            echo -e "\e[1mNo Masscan installation detected!\e[0m\nMake sure that masscan is installed and declared on local variables." && exit 1
+    fi
+}
+
 #Main function
 function run_main () {
     if [ -z $configfile ] ; then #if theres no configfile, run
@@ -55,4 +63,5 @@ else
     esac
 fi
 
+run_check
 run_main
