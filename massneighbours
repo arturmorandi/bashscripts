@@ -1,62 +1,58 @@
 #!/bin/bash
 #Script to identify your ISP neighbouring subnet and run masscan on it.
-#Study script just for exercise.
 
-#Unset all global variables used
-unset mypubip
-unset provsubnets
-unset configfile
-unset ports
-unset options
+#Sets a bash 'relaxed strict' mode :P
+set -eo pipefail
+IFS=$'\n\t'
 
 #Main function
 function run_main () {
-	if [ -z $configfile ] ; then #if theres no configfile, run
-		echo "Found ${#provsubnets[*]} records in the WHOIS database:"
-		PS3="Select desired subnet [1-${#provsubnets[@]}]: "
-		select option in ${provsubnets[*]}; do
-			while (( $REPLY <= ${#provsubnets[*]} )); do #while replies are valid, ask for ports and run
-				read -p "Ports (comma separated): " ports
-				echo "Searching $option for ports $ports" > mn$(date '+%y%m%d-%H%M%S').log
-				xterm -T "Status" -e tail -f $(ls -tr mn*.log | tail -1) &
-				masscan -p $ports $option >> $(ls -tr mn*.log | tail -1)
-				kill $(pidof xterm)
-				echo -e "\nExecution complete. Results saved to $(ls -tr mn*.log | tail -1)\n"
-				exit 0
-			done
-		done
-	else #if configfile, use it
-		echo -e "Using configuration file '$configfile'" > mn$(date '+%y%m%d-%H%M%S').log
-		xterm -T "Status" -e tail -f $(ls -tr mn*.log | tail -1) &
-		masscan -c $configfile >> $(ls -tr mn*.log | tail -1)
-		kill $(pidof xterm)
-		echo -e "\nExecution complete. Results saved to $(ls -tr mn*.log | tail -1)\n"
-		exit 0
-	fi
+    if [ -z $configfile ] ; then #if theres no configfile, run
+        echo "Found ${#provsubnets[*]} records in the WHOIS database:"
+        PS3="Select desired subnet [1-${#provsubnets[@]}]: "
+        select option in ${provsubnets[*]}; do
+            while (( $REPLY <= ${#provsubnets[*]} )); do #while replies are valid, ask for ports and run
+                read -p "Ports (comma separated): " ports
+                echo "Searching $option for ports $ports" > mn$(date '+%y%m%d-%H%M%S').log
+                xterm -T "Status" -e tail -f $(ls -tr mn*.log | tail -1) &
+                masscan -p $ports $option >> $(ls -tr mn*.log | tail -1)
+                kill $(pidof xterm)
+                echo -e "\nExecution complete. Results saved to $(ls -tr mn*.log | tail -1)\n"
+                exit 0
+            done
+        done
+    else #if configfile, use it
+        echo -e "Using configuration file '$configfile'" > mn$(date '+%y%m%d-%H%M%S').log
+        xterm -T "Status" -e tail -f $(ls -tr mn*.log | tail -1) &
+        masscan -c $configfile >> $(ls -tr mn*.log | tail -1)
+        kill $(pidof xterm)
+        echo -e "\nExecution complete. Results saved to $(ls -tr mn*.log | tail -1)\n"
+        exit 0
+    fi
 }
 
 #Help function
 function run_help () {
-	echo -e "\n\e[1m-=[ Masscan Neighbours ]=-\e[0m\nThis script parses your public IP address and queries the public WHOIS database to identify the related subnets. The script is interactive so no command line parameters are needed, unless you wish to specify an existing masscan configuration file, which can be done by using the \e[1m-c\e[0m switch.\n"
-	exit 0
+    echo -e "\e[1mUsage: $ ./massneighbours\e[0m\nThis script parses your public IP address and queries the public WHOIS database to identify the related subnets. The script is interactive so no parameters are needed (unless you wish to specify an existing masscan configuration file, which can be done by using the \e[1m-c\e[0m switch)."
+    exit 0
 }
 
 #Main script logic
 if (( $# == 0 )) ; then
-	mypubip=$(curl -s ifconfig.me/ip)
-	provsubnets=( "$mypubip/24" $(whois $mypubip | grep "inetnum\|inetrev\|CIDR:" | cut -d ':' -f 2 | tr -d '[:blank:]') )
+    mypubip=$(curl -s ifconfig.me/ip)
+    provsubnets=( "$mypubip/24" $(whois $mypubip | grep "inetnum\|inetrev\|CIDR:" | cut -d ':' -f 2 | tr -d '[:blank:]') )
 else
-	case $1 in
-		-c)
-			if [ -z $2 ] ; then
-				echo -e "Config file switch detected but no config file specified.\nExample: massneighbours -c config.conf"
-				exit 0
-			else
-				configfile=$2
-				run_main
-			fi ;;
-		*) run_help && exit 0 ;;
-	esac
+    case $1 in
+        -c)
+            if [ -z $2 ] ; then
+                echo -e "\e[1mUsage: $ ./massneighbours -c <configfile>\e[0m\nConfig file switch detected but no config file specified.\nTo export from masscan, use \e[97m'masscan -p <ports> <subnet> --echo >> <configfile>'\e[0m"
+                exit 0
+            else
+                configfile=$2
+                run_main
+            fi ;;
+        *) run_help && exit 0 ;;
+    esac
 fi
 
 run_main
