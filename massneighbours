@@ -24,7 +24,7 @@ function run_main () {
                 echo "Searching $option for ports $ports" > mn$(date '+%y%m%d-%H%M%S').log
                 xterm -T "Status" -e tail -f $(ls -tr mn*.log | tail -1) &
                 masscan -p $ports $option >> $(ls -tr mn*.log | tail -1)
-                kill $(pidof xterm)
+                kill $(pidof xterm) > /dev/null 2>&1
                 echo -e "\nExecution complete. Results saved to $(ls -tr mn*.log | tail -1)\n"
                 exit 0
             done
@@ -33,7 +33,7 @@ function run_main () {
         echo -e "Using configuration file '$configfile'" > mn$(date '+%y%m%d-%H%M%S').log
         xterm -T "Status" -e tail -f $(ls -tr mn*.log | tail -1) &
         masscan -c $configfile >> $(ls -tr mn*.log | tail -1)
-        kill $(pidof xterm)
+        kill $(pidof xterm) > /dev/null 2>&1
         echo -e "\nExecution complete. Results saved to $(ls -tr mn*.log | tail -1)\n"
         exit 0
     fi

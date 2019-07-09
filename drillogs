@@ -1,0 +1,23 @@
+#!/bin/bash
+#Gets first param and runs nmap on specified port
+#ALPHA version, just testing parsing, will be a function in massneighbours
+
+#Sets a bash 'relaxed strict' mode :P
+set -eo pipefail
+IFS=$'\n\t'
+
+hostlist=( $(cat $1 | cut -d ' ' -f 4,6 | sed 's/\/tcp//' | grep -v ports | cut -d ' ' -f 1,2) )
+logfile="detailed_$1"
+
+function runshit () {
+mkdir $1_screenshots
+for host in ${hostlist[*]} ; do
+	local curhost=$(echo $host | cut -d ' ' -f 2)
+	local curport=$(echo $host | cut -d ' ' -f 1)
+#	nmap -sS -A -n -T4 --send-eth -oN $logfile -p $curport $curhost
+	echo "Saving screenshot from http://$curhost:$curport into ./$1_screenshots"
+	cutycapt --url="http://$curhost:$curport" --max-wait=20000 --out="./$1_screenshots/$curhost:$curport.png" --delay=10
+done
+for img in $(find . -size -3512c | grep -v .git | grep png); do rm -rf $img; done
+}
+runshit
