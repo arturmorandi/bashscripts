@@ -11,7 +11,7 @@ function run_check () {
     declare -i local dependency=0
 
     #Checks if there are any dependencies missing
-    while (( $dependency <= ${#deps[*]} )) ; do
+    while (( $dependency != ${#deps[*]} )) ; do
         if [ -z $(which masscan) ] ; then
             missdeps[$dependency]="masscan"
             dependency=$dependency+1 ; break
@@ -25,6 +25,7 @@ function run_check () {
             missdeps[$dependency]="whois"
             dependency=$dependency+1 ; break
         fi
+        dependency=$dependency+1 ; break
     done
 
     #If there are, install them using apt or exit
