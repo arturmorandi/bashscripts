@@ -7,9 +7,34 @@ IFS=$'\n\t'
 
 #Masscan dependency check
 function run_check () {
-    local depcheck=$(which masscan)
-    if [ -z "$depcheck" ] ; then
-            echo -e "\e[1mNo Masscan installation detected!\e[0m\nMake sure that masscan is installed and declared on local variables." && exit 1
+    local deps=( "masscan" "xterm" "curl" "whois" )
+    declare -i local dependency=0
+
+    #Checks if there are any dependencies missing
+    while (( $dependency <= ${#deps[*]} )) ; do
+        if [ -z $(which masscan) ] ; then
+            missdeps[$dependency]="masscan"
+            dependency=$dependency+1 ; break
+        elif [ -z $(which xterm) ] ; then
+            missdeps[$dependency]="xterm"
+            dependency=$dependency+1 ; break
+        elif [ -z $(which curl) ] ; then
+            missdeps[$dependency]="curl"
+            dependency=$dependency+1 ; break
+        elif [ -z $(which whois) ] ; then
+            missdeps[$dependency]="whois"
+            dependency=$dependency+1 ; break
+        fi
+    done
+
+    #If there are, install them using apt or exit
+    if (( ${#missdeps[*]} != 0 )) ; then
+        echo -e "Dependency '${missdeps[@]}' are missing!"
+        read -p "Do you want to install? ['Y' to approve, any other key to exit] " tryinstall
+            case $tryinstall in
+            y|yes|Y) apt install ${missdeps[*]} && echo -e "\n\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\nDependencies installed, continuing with script!\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\n" && sleep 1 ;;
+            *) echo -e "Sure, but please install the packages manually in order for the script to work.\n" && exit 0 ;;
+            esac
     fi
 }
 
@@ -46,6 +71,8 @@ function run_help () {
 }
 
 #Main script logic
+run_check
+
 if (( $# == 0 )) ; then
     mypubip=$(curl -s ifconfig.me/ip)
     provsubnets=( "$mypubip/24" $(whois $mypubip | grep "inetnum\|inetrev\|CIDR:" | cut -d ':' -f 2 | tr -d '[:blank:]') )
@@ -63,5 +90,4 @@ else
     esac
 fi
 
-run_check
 run_main
